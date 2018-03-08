@@ -27,7 +27,7 @@ CABAC_BITS__TRANSFORM_SUBDIV_FLAG
 Purpose: Counts bits used to signal whether the transform quadtree is subdivided.
 
 CABAC_BITS__QT_ROOT_CBF
-Purpose: Counts bits used to specify a quad-tree root coded block flag. These bits are set to "1" if the quad-tree root has non-zero quantized residual coefficients.
+Purpose: Counts bits used to specify a quad-tree (QT) root coded block flag (CBF). These bits are set to "1" if the quad-tree root has non-zero quantized residual coefficients.
 
 CABAC_BITS__DELTA_QP_EP
 Purpose: Counts equal-probability bits that encode changes in quantization.
@@ -36,10 +36,10 @@ CABAC_BITS__CHROMA_QP_ADJUSTMENT
 Purpose: Counts bits used for adjustments in the quantization qp factor used for chroma samples.
 
 CABAC_BITS__QT_CBF
-Purpose: Counts bits used to specify a quad-tree coded block flag. These bits are set to "1" if the quad-tree has non-zero quantized residual coefficients.
+Purpose: Counts bits used to specify a quad-tree (QT) coded block flag (CBF). These bits are set to "1" if the quad-tree has non-zero quantized residual coefficients.
 
 CABAC_BITS__CROSS_COMPONENT_PREDICTION
-Purpose: Counts cross-component prediction bits, for predicting chroma components based on luma.
+Purpose: Counts cross-component prediction bits, for predicting chroma residuals based on existing luma residuals.
 
 CABAC_BITS__TRANSFORM_SKIP_FLAGS
 Purpose: Counts bits used to signal that a residual is coded without transforming to the frequency domain.
@@ -58,10 +58,10 @@ CABAC_BITS__SIG_COEFF_MAP_FLAG
 Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
 
 CABAC_BITS__GT1_FLAG
-Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+Purpose: These bits signal whether any remaining residual coefficients in a block have a value greater than one. Appears in the parseCoeffNxN() routine, so it's probably residual.
 
 CABAC_BITS__GT2_FLAG
-Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+Purpose: These bits signal whether any remaining residual coefficients in a block have a value greater than two. Appears in the parseCoeffNxN() routine, so it's probably residual.
 
 CABAC_BITS__SIGN_BIT
 Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
