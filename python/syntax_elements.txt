@@ -1,21 +1,52 @@
 
 
-NAL_UNIT_TOTAL_BODY // This is a special case and is not included in the total sums.
+NAL_UNIT_TOTAL_BODY
+Purpose: Counts the total number of bits which appear as a NAL unit body; this is the sum of all other syntax element counts besides NAL_UNIT_PACKING.
+
 NAL_UNIT_PACKING
+Purpose: Counts bits that constitute the NAL unit prefix pattern (0x000001), which appears at the beginning of every NAL unit.
+
 EMULATION_PREVENTION_3_BYTES
+Purpose: Counts bits spent preventing the NAL unit prefix pattern (0x000001) from appearing in the middle of the stream.
+
 NAL_UNIT_HEADER_BITS
+Purpose: Counts bits spent in NAL unit headers, including the forbidden zero bit, NAL unit types, layer ids, and temporal ids.
+
 CABAC_INITIALISATION
+Purpose: Counts bits spent initializing the CABAC model.
+
 CABAC_BITS__TQ_BYPASS_FLAG
+Purpose: These bits signal whether transquant (TQ) bypass is enabled for a given coding unit (CU). When transquant bypass is enabled, DCT transform and quantization are skipped for a coding unit's residual values and they are instead losslessly, directly encoded (perhaps differentially with RDPCM).
+
 CABAC_BITS__SKIP_FLAG
+Purpose: These bits specify if prediction motion vectors for a given CU should be reconstructed in skip mode, which is a special case of merge mode.
+
 CABAC_BITS__MERGE_FLAG
+Purpose: These bits specify if prediction motion vectors for a given PU should be reconstructed using a motion vector candidate in merge mode.
+
 CABAC_BITS__MERGE_INDEX
+Purpose: When motion vectors are reconstructed in merge mode, these bits specify the index of the motion vector candidate that should be used for inter-frame prediction.
+
 CABAC_BITS__MVP_IDX
+Purpose: When motion vectors are reconstructed in non-merge mode, these bits specify the index of the motion vector that should be used for inter-frame prediction.
+
 CABAC_BITS__SPLIT_FLAG
+Purpose: These bits specify whether a CU is split into subparts.
+
 CABAC_BITS__PART_SIZE
+Purpose: These bits signal the size of a CU's partition.
+
 CABAC_BITS__PRED_MODE
+Purpose: Counts bits spent signaling the prediction mode (0 for inter, 1 for intra).
+
 CABAC_BITS__INTRA_DIR_ANG
+Purpose: Counts bits spent signaling intra-frame prediction angle directions.
+
 CABAC_BITS__INTER_DIR
+Purpose: Counts bits spent signaling inter-frame prediction direction.
+
 CABAC_BITS__REF_FRM_IDX
+Purpose: Part of motion vector coding.
 
 CABAC_BITS__MVD
 Purpose: Counts bits that encode motion vector differences.
@@ -24,19 +55,19 @@ CABAC_BITS__MVD_EP
 Purpose: Counts equal-probability bits that encode motion vector differences.
 
 CABAC_BITS__TRANSFORM_SUBDIV_FLAG
-Purpose: Counts bits used to signal whether the transform quadtree is subdivided.
+Purpose: Counts bits used to signal whether a transform quadtree is subdivided.
 
 CABAC_BITS__QT_ROOT_CBF
-Purpose: Counts bits used to specify a quad-tree (QT) root coded block flag (CBF). These bits are set to "1" if the quad-tree root has non-zero quantized residual coefficients.
+Purpose: Counts bits used to specify a quad-tree (QT) root coded block flag (CBF). These bits are set to 1 if the quad-tree root has non-zero quantized residual coefficients.
 
 CABAC_BITS__DELTA_QP_EP
-Purpose: Counts equal-probability bits that encode changes in quantization.
+Purpose: Counts equal-probability bits that encode changes in the quantization factor QP.
 
 CABAC_BITS__CHROMA_QP_ADJUSTMENT
-Purpose: Counts bits used for adjustments in the quantization qp factor used for chroma samples.
+Purpose: Counts bits used for adjustments in the quantization factor QP used for chroma samples.
 
 CABAC_BITS__QT_CBF
-Purpose: Counts bits used to specify a quad-tree (QT) coded block flag (CBF). These bits are set to "1" if the quad-tree has non-zero quantized residual coefficients.
+Purpose: Counts bits used to specify a quad-tree (QT) coded block flag (CBF). These bits are set to 1 if the quad-tree has non-zero quantized residual coefficients.
 
 CABAC_BITS__CROSS_COMPONENT_PREDICTION
 Purpose: Counts cross-component prediction bits, for predicting chroma residuals based on existing luma residuals.
@@ -90,19 +121,19 @@ CABAC_PCM_ALIGN_BITS
 Purpose: Unused in HM reference code!
 
 CABAC_PCM_CODE_BITS
-Purpose: Counts bits when I_PCM mode (pulse-code modulation) is invoked at the CU or TU level to directly represent sample values at a predefined precision.
+Purpose: Counts bits when I_PCM mode (intra pulse code modulation) is invoked at the CU or TU level to directly code raw sample values at a predefined precision.
 
 BYTE_ALIGNMENT_BITS
 Purpose: Appears in the parseSliceHeader() routine...
 
 TRAILING_BITS
-Purpose: Counts bits appearing at the end of a slice after the terminating bit
+Purpose: Counts bits appearing at the end of a slice after the terminating bit.
 
 EXPLICIT_RDPCM_BITS
-Purpose: Counts the bits used in residual differential pulse code modulation (RDPCM), which is essentially when residual values are differentially coded (either horizontally or vertically) in the spacial domain and directly stored.
+Purpose: Counts the bits used in residual differential pulse code modulation (RDPCM), which is essentially when residual values are differentially coded (either horizontally or vertically) in the spatial domain instead of transformed and quantized.
 
 CABAC_EP_BIT_ALIGNMENT
-Purpose: Counts equal-probability alignment bits. Called only in the parseCoeffNxN() routine, so it's probably residual.
+Purpose: Counts equal-probability alignment bits. Appears only in the parseCoeffNxN() routine, so it's probably residual.
 
 CABAC_BITS__ALIGNED_SIGN_BIT
 Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.

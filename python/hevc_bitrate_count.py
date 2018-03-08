@@ -26,7 +26,7 @@ bitrates = [
 
 
 ## If true, the recoded videos will be saved in the current directory
-save_recoded_videos = True
+save_recoded_videos = False
 
 
 
@@ -39,9 +39,14 @@ save_recoded_videos = True
 
 ## List of all syntax element keys related to PREDICTION
 prediction_keys = [
+	"CABAC_BITS__SKIP_FLAG",
+	"CABAC_BITS__MERGE_FLAG",
+	"CABAC_BITS__MERGE_INDEX",
+	"CABAC_BITS__MVP_IDX",
 	"CABAC_BITS__PRED_MODE",
 	"CABAC_BITS__INTRA_DIR_ANG",
 	"CABAC_BITS__INTER_DIR",
+	"CABAC_BITS__REF_FRM_IDX",
 	"CABAC_BITS__MVD",
 	"CABAC_BITS__MVD_EP",
 	"CABAC_BITS__CROSS_COMPONENT_PREDICTION"
@@ -50,6 +55,13 @@ prediction_keys = [
 
 ## List of all syntax element keys related to RESIDUAL
 residual_keys = [
+	"CABAC_BITS__TQ_BYPASS_FLAG",
+	"CABAC_BITS__TRANSFORM_SUBDIV_FLAG",
+	"CABAC_BITS__QT_ROOT_CBF",
+	"CABAC_BITS__DELTA_QP_EP",
+	"CABAC_BITS__CHROMA_QP_ADJUSTMENT",
+	"CABAC_BITS__QT_CBF",
+	"CABAC_BITS__TRANSFORM_SKIP_FLAGS",
 	"CABAC_BITS__LAST_SIG_X_Y",
 	"CABAC_BITS__SIG_COEFF_GROUP_FLAG",
 	"CABAC_BITS__SIG_COEFF_MAP_FLAG",
@@ -60,12 +72,7 @@ residual_keys = [
 	"EXPLICIT_RDPCM_BITS",
 	"CABAC_EP_BIT_ALIGNMENT",
 	"CABAC_BITS__ALIGNED_SIGN_BIT",
-	"CABAC_BITS__ALIGNED_ESCAPE_BITS",
-	"CABAC_BITS__CHROMA_QP_ADJUSTMENT",
-	"CABAC_BITS__DELTA_QP_EP",
-	"CABAC_BITS__QT_CBF",
-	"CABAC_BITS__QT_ROOT_CBF",
-	"CABAC_BITS__TRANSFORM_SKIP_FLAGS"
+	"CABAC_BITS__ALIGNED_ESCAPE_BITS"
 ]
 
 
@@ -126,6 +133,10 @@ cavlc_regex = re.compile(
 
 ## Data structure for storing results
 results = {}
+
+
+## Print header
+print("\t".join(["total", "prediction", "residual", "other"]))
 
 
 ## Bitrate loop
@@ -228,4 +239,10 @@ for bitrate in bitrates:
 	
 	
 	## Output results
-	pprint.pprint({ bitrate: results[bitrate] })
+	#pprint.pprint({ bitrate: results[bitrate] })
+	print("\t".join([
+		str(results[bitrate]['hevc_bistream_size']),
+		str(results[bitrate]['prediction']),
+		str(results[bitrate]['residual']),
+		str(results[bitrate]['other'])
+	]))
