@@ -25,6 +25,10 @@ bitrates = [
 ]
 
 
+## If true, the recoded videos will be saved in the current directory
+save_recoded_videos = True
+
+
 
 
 ################################################################################
@@ -39,13 +43,29 @@ prediction_keys = [
 	"CABAC_BITS__INTRA_DIR_ANG",
 	"CABAC_BITS__INTER_DIR",
 	"CABAC_BITS__MVD",
-	"CABAC_BITS__MVD_EP"
+	"CABAC_BITS__MVD_EP",
+	"CABAC_BITS__CROSS_COMPONENT_PREDICTION"
 ]
 
 
 ## List of all syntax element keys related to RESIDUAL
 residual_keys = [
-	
+	"CABAC_BITS__LAST_SIG_X_Y",
+	"CABAC_BITS__SIG_COEFF_GROUP_FLAG",
+	"CABAC_BITS__SIG_COEFF_MAP_FLAG",
+	"CABAC_BITS__GT1_FLAG",
+	"CABAC_BITS__GT2_FLAG",
+	"CABAC_BITS__SIGN_BIT",
+	"CABAC_BITS__ESCAPE_BITS",
+	"EXPLICIT_RDPCM_BITS",
+	"CABAC_EP_BIT_ALIGNMENT",
+	"CABAC_BITS__ALIGNED_SIGN_BIT",
+	"CABAC_BITS__ALIGNED_ESCAPE_BITS",
+	"CABAC_BITS__CHROMA_QP_ADJUSTMENT",
+	"CABAC_BITS__DELTA_QP_EP",
+	"CABAC_BITS__QT_CBF",
+	"CABAC_BITS__QT_ROOT_CBF",
+	"CABAC_BITS__TRANSFORM_SKIP_FLAGS"
 ]
 
 
@@ -157,13 +177,24 @@ for bitrate in bitrates:
 	
 	
 	## Clean files
-	os.remove(recoded_video_file_name)
+	if save_recoded_videos:
+		os.rename(recoded_video_file_name, bitrate + "_" + recoded_video_file_name)
+	else:
+		os.remove(recoded_video_file_name)
+	
+	
+	## Save hevc bitstream size
+	results[bitrate]['hevc_bistream_size'] = os.path.getsize(extracted_bitstream_file_name)
 	
 	
 	## Run bit count decoder
 	result = subprocess.run(bit_count_decoder, stdout=subprocess.PIPE)
 	output = result.stdout.decode('utf-8')
 	lines  = output.splitlines()
+	
+	
+	## Clean files
+	os.remove(extracted_bitstream_file_name)
 	
 	
 	## Parse bit count output line-by-line
@@ -196,13 +227,5 @@ for bitrate in bitrates:
 	results[bitrate]['other']      /= 8
 	
 	
-	## Save hevc bitstream size
-	results[bitrate]['hevc_bistream_size'] = os.path.getsize(extracted_bitstream_file_name)
-	
-	
-	## Clean files
-	os.remove(extracted_bitstream_file_name)
-
-
-## Show off results
-pprint.pprint(results)
+	## Output results
+	pprint.pprint({ bitrate: results[bitrate] })

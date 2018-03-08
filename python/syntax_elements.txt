@@ -1,0 +1,434 @@
+
+
+NAL_UNIT_TOTAL_BODY // This is a special case and is not included in the total sums.
+NAL_UNIT_PACKING
+EMULATION_PREVENTION_3_BYTES
+NAL_UNIT_HEADER_BITS
+CABAC_INITIALISATION
+CABAC_BITS__TQ_BYPASS_FLAG
+CABAC_BITS__SKIP_FLAG
+CABAC_BITS__MERGE_FLAG
+CABAC_BITS__MERGE_INDEX
+CABAC_BITS__MVP_IDX
+CABAC_BITS__SPLIT_FLAG
+CABAC_BITS__PART_SIZE
+CABAC_BITS__PRED_MODE
+CABAC_BITS__INTRA_DIR_ANG
+CABAC_BITS__INTER_DIR
+CABAC_BITS__REF_FRM_IDX
+
+CABAC_BITS__MVD
+Purpose: Counts bits that encode motion vector differences.
+
+CABAC_BITS__MVD_EP
+Purpose: Counts equal-probability bits that encode motion vector differences.
+
+CABAC_BITS__TRANSFORM_SUBDIV_FLAG
+Purpose: Counts bits used to signal whether the transform quadtree is subdivided.
+
+CABAC_BITS__QT_ROOT_CBF
+Purpose: Counts bits used to specify a quad-tree root coded block flag. These bits are set to "1" if the quad-tree root has non-zero quantized residual coefficients.
+
+CABAC_BITS__DELTA_QP_EP
+Purpose: Counts equal-probability bits that encode changes in quantization.
+
+CABAC_BITS__CHROMA_QP_ADJUSTMENT
+Purpose: Counts bits used for adjustments in the quantization qp factor used for chroma samples.
+
+CABAC_BITS__QT_CBF
+Purpose: Counts bits used to specify a quad-tree coded block flag. These bits are set to "1" if the quad-tree has non-zero quantized residual coefficients.
+
+CABAC_BITS__CROSS_COMPONENT_PREDICTION
+Purpose: Counts cross-component prediction bits, for predicting chroma components based on luma.
+
+CABAC_BITS__TRANSFORM_SKIP_FLAGS
+Purpose: Counts bits used to signal that a residual is coded without transforming to the frequency domain.
+
+
+
+
+
+CABAC_BITS__LAST_SIG_X_Y
+Purpose: "The X and Y component within a block of the last significant coefficient." Here "significant coefficient" means a non-zero quantized DCT coefficient.
+
+CABAC_BITS__SIG_COEFF_GROUP_FLAG
+Purpose: A flag specified for each TU subblock indicating whether the subblock consists entirely of coefficients with value zero.
+
+CABAC_BITS__SIG_COEFF_MAP_FLAG
+Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+
+CABAC_BITS__GT1_FLAG
+Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+
+CABAC_BITS__GT2_FLAG
+Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+
+CABAC_BITS__SIGN_BIT
+Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+
+CABAC_BITS__ESCAPE_BITS
+Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+
+
+
+
+
+CABAC_BITS__SAO
+Purpose: Count all sample adaptive offset (SAO) bits (in-loop filtering).
+
+CABAC_TRM_BITS
+Purpose: Counts terminating bits appearing at the end of a slice.
+
+CABAC_FIXED_BITS
+Purpose: Unused in HM reference code!
+
+
+
+
+
+CABAC_PCM_ALIGN_BITS
+Purpose: Unused in HM reference code!
+
+CABAC_PCM_CODE_BITS
+Purpose: Counts bits when I_PCM mode (pulse-code modulation) is invoked at the CU or TU level to directly represent sample values at a predefined precision.
+
+BYTE_ALIGNMENT_BITS
+Purpose: Appears in the parseSliceHeader() routine...
+
+TRAILING_BITS
+Purpose: Counts bits appearing at the end of a slice after the terminating bit
+
+EXPLICIT_RDPCM_BITS
+Purpose: Counts the bits used in residual differential pulse code modulation (RDPCM), which is essentially when residual values are differentially coded (either horizontally or vertically) in the spacial domain and directly stored.
+
+CABAC_EP_BIT_ALIGNMENT
+Purpose: Counts equal-probability alignment bits. Called only in the parseCoeffNxN() routine, so it's probably residual.
+
+CABAC_BITS__ALIGNED_SIGN_BIT
+Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+
+CABAC_BITS__ALIGNED_ESCAPE_BITS
+Purpose: Appears in the parseCoeffNxN() routine, so it's probably residual.
+
+
+
+
+
+
+amp_enabled_flag
+
+aspect_ratio_idc
+
+aspect_ratio_info_present_flag
+
+bit_depth_chroma_minus8
+
+bit_depth_luma_minus8
+
+bitstream_restriction_flag
+
+broken_link_flag
+
+cabac_init_present_flag
+
+chroma_format_idc
+
+chroma_loc_info_present_flag
+
+chroma_weight_l0_flag[i]
+
+collocated_from_l0_flag
+
+collocated_ref_idx
+
+conformance_window_flag
+
+constrained_intra_pred_flag
+
+cu_qp_delta_enabled_flag
+
+deblocking_filter_control_present_flag
+
+default_display_window_flag
+
+delta_chroma_log2_weight_denom
+
+delta_poc_s0_minus1
+
+delta_poc_s1_minus1
+
+dependent_slice_segment_flag
+Type: flag
+Coding: VLC
+Location: Every slice segment header IF dependent slice segments are enabled in the current PPS AND the slice segment is not the first slice segment in the picture.
+Purpose: "If true, the value of each slice segment header syntax element that is not present is inferred to be equal to the value of the corresponding slice segment header syntax element in the slice header."
+
+dependent_slice_segments_enabled_flag
+
+diff_cu_qp_delta_depth
+
+entropy_coding_sync_enabled_flag
+
+entry_point_offset_minus1
+
+exact_matching_flag
+
+field_seq_flag
+
+first_slice_segment_in_pic_flag
+Type: flag
+Coding: VLC
+Location: Every slice segment header
+Purpose: Indicates whether the slice segment is the first slice segment of the picture in decoding order.
+
+five_minus_max_num_merge_cand
+
+frame_field_info_present_flag
+
+general_frame_only_constraint_flag
+
+general_inbld_flag
+
+general_interlaced_source_flag
+
+general_level_idc
+
+general_non_packed_constraint_flag
+
+general_one_picture_only_constraint_flag
+
+general_profile_compatibility_flag[][j]
+
+general_profile_idc
+
+general_profile_space
+
+general_progressive_source_flag
+
+general_reserved_zero_35bits[0..15]
+
+general_reserved_zero_35bits[16..31]
+
+general_reserved_zero_35bits[32..34]
+
+general_reserved_zero_7bits
+
+general_tier_flag
+
+init_qp_minus26
+
+lists_modification_present_flag
+
+log2_diff_max_min_luma_coding_block_size
+
+log2_diff_max_min_luma_transform_block_size
+
+log2_max_pic_order_cnt_lsb_minus4
+
+log2_min_luma_coding_block_size_minus3
+
+log2_min_luma_transform_block_size_minus2
+
+log2_parallel_merge_level_minus2
+
+long_term_ref_pics_present_flag
+
+luma_log2_weight_denom
+
+luma_weight_l0_flag[i]
+
+max_transform_hierarchy_depth_inter
+
+max_transform_hierarchy_depth_intra
+
+mvd_l1_zero_flag
+
+neutral_chroma_indication_flag
+
+no_output_of_prior_pics_flag
+Type: flag
+Coding: VLC
+Location: Appears in the slice segment header for random access point (RAP) pictures
+Purpose: "Affects the output of previously-decoded pictures in the decoded picture buffer after the decoding of an IDR or a BLA picture that is not the first picture in the bitstream as specified in Annex C."
+
+num_entry_point_offsets
+
+num_extra_slice_header_bits
+
+num_negative_pics
+
+num_positive_pics
+
+num_ref_idx_active_override_flag
+
+num_ref_idx_l0_active_minus1
+
+num_ref_idx_l0_default_active_minus1
+
+num_ref_idx_l1_active_minus1
+
+num_ref_idx_l1_default_active_minus1
+
+num_short_term_ref_pic_sets
+
+offset_len_minus1
+
+output_flag_present_flag
+
+overscan_info_present_flag
+
+payload_bit_equal_to_one
+
+payload_bit_equal_to_zero
+
+payload_size
+
+payload_type
+
+pcm_enabled_flag
+
+pic_height_in_luma_samples
+
+pic_width_in_luma_samples
+
+pps_cb_qp_offset
+
+pps_cr_qp_offset
+
+pps_extension_present_flag
+
+pps_loop_filter_across_slices_enabled_flag
+
+pps_pic_parameter_set_id
+
+pps_scaling_list_data_present_flag
+
+pps_seq_parameter_set_id
+
+pps_slice_chroma_qp_offsets_present_flag
+
+rbsp_alignment_zero_bit
+
+rbsp_stop_one_bit
+
+recovery_poc_cnt
+
+sample_adaptive_offset_enabled_flag
+
+scaling_list_enabled_flag
+
+short_term_ref_pic_set_sps_flag
+
+sign_data_hiding_enabled_flag
+
+slice_loop_filter_across_slices_enabled_flag
+
+slice_pic_order_cnt_lsb
+
+slice_pic_parameter_set_id
+Type: Integer in the range [0, 63]
+Coding: VLC
+Location: Every slice segment header
+Purpose: "Specifies the value of pps_pic_parameter_set_id for the PPS in use."
+
+slice_qp_delta
+
+slice_sao_chroma_flag
+
+slice_sao_luma_flag
+
+slice_segment_address
+Type: Address of a coding tree block
+Coding: VLC
+Location: Slice segment headers of slice segments that are not the first slice segment in the picture.
+Purpose: "Specifies the address of the first coding tree block in the slice segment, in coding tree block raster scan of a picture."
+
+slice_segment_header_extension_present_flag 
+
+slice_temporal_mvp_enabled_flag
+
+slice_type
+
+sps_extension_present_flag
+
+sps_max_dec_pic_buffering_minus1[i]
+
+sps_max_latency_increase_plus1[i]
+
+sps_max_num_reorder_pics[i]
+
+sps_max_sub_layers_minus1
+
+sps_seq_parameter_set_id
+
+sps_sub_layer_ordering_info_present_flag
+
+sps_temporal_id_nesting_flag
+
+sps_temporal_mvp_enabled_flag
+
+sps_video_parameter_set_id
+
+strong_intra_smoothing_enable_flag
+
+tiles_enabled_flag
+
+transform_skip_enabled_flag
+
+transquant_bypass_enabled_flag
+
+used_by_curr_pic_s0_flag
+
+used_by_curr_pic_s1_flag
+
+user_data_payload_byte
+
+uuid_iso_iec_11578
+
+video_signal_type_present_flag
+
+vps_base_layer_available_flag
+
+vps_base_layer_internal_flag
+
+vps_extension_flag
+
+vps_max_dec_pic_buffering_minus1[i]
+
+vps_max_latency_increase_plus1[i]
+
+vps_max_layer_id
+
+vps_max_layers_minus1
+
+vps_max_num_reorder_pics[i]
+
+vps_max_sub_layers_minus1
+
+vps_num_layer_sets_minus1
+
+vps_reserved_0xffff_16bits
+
+vps_sub_layer_ordering_info_present_flag
+
+vps_temporal_id_nesting_flag
+
+vps_timing_info_present_flag
+
+vps_video_parameter_set_id
+
+vui_hrd_parameters_present_flag
+
+vui_num_units_in_tick
+
+vui_parameters_present_flag
+
+vui_poc_proportional_to_timing_flag
+
+vui_time_scale
+
+vui_timing_info_present_flag
+
+weighted_bipred_flag
+
+weighted_pred_flag
