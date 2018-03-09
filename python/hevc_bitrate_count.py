@@ -12,17 +12,29 @@ import re
 ################################################################################
 
 ## Path of source video file
-source_video_path = "tractor.mp4"
+source_video_path = "jellyfish.mp4"
 
 
 ## Bitrates to test (in kbps)
 bitrates = [
-	"400k",
-	"375k",
-	"350k",
-	"325k",
-	"300k"
+	"100000k",
+	"80000k",
+	"60000k",
+	"40000k",
+	"20000k",
+	"10000k",
+	"5000k",
+	"1000k",
+	"500k",
+	"250k"
 ]
+#bitrates = [
+#	"400k",
+#	"375k",
+#	"350k",
+#	"325k",
+#	"300k"
+#]
 
 
 ## If true, the recoded videos will be saved in the current directory
