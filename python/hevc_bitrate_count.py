@@ -12,29 +12,29 @@ import re
 ################################################################################
 
 ## Path of source video file
-source_video_path = "jellyfish.mp4"
+source_video_path = "tractor.mp4"
 
 
 ## Bitrates to test (in kbps)
-bitrates = [
-	"100000k",
-	"80000k",
-	"60000k",
-	"40000k",
-	"20000k",
-	"10000k",
-	"5000k",
-	"1000k",
-	"500k",
-	"250k"
-]
 #bitrates = [
-#	"400k",
-#	"375k",
-#	"350k",
-#	"325k",
-#	"300k"
+#	"100000k",
+#	"80000k",
+#	"60000k",
+#	"40000k",
+#	"20000k",
+#	"10000k",
+#	"5000k",
+#	"1000k",
+#	"500k",
+#	"250k"
 #]
+bitrates = [
+	"400k",
+	"375k",
+	"350k",
+	"325k",
+	"300k"
+]
 
 
 ## If true, the recoded videos will be saved in the current directory
@@ -106,6 +106,10 @@ recoded_video_file_name = "recoded.mp4"
 extracted_bitstream_file_name = "recoded.h265"
 
 
+## PSNR output file name
+psnr_output_file_name = "psnr.mp4"
+
+
 ## Command line input to extract hevc bitstream
 extract_hevc_bitstream = [
 	"ffmpeg",
@@ -123,6 +127,16 @@ bit_count_decoder = [
 ]
 
 
+## Command line input to calculate psnr
+calculate_psnr = [
+	"ffmpeg",
+	"-i", source_video_path,
+	"-i", recoded_video_file_name,
+	"-filter_complex", "psnr",
+	psnr_output_file_name
+]
+
+
 ## CABAC line parsing regex
 cabac_regex = re.compile(
 	"^\s(\S+)\s+:\s+(\S+)\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s\(\s+(-?\d+)\)\s$"
@@ -132,6 +146,18 @@ cabac_regex = re.compile(
 ## CAVLC line parsing regex
 cavlc_regex = re.compile(
 	"^\s(\S+)\s+:\s+-\s+-\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s\(\s+(-?\d+)\)\s$"
+)
+
+
+## PSNR parsing regex
+psnr_regex = re.compile(
+	"PSNR y:(\d+\.?\d*) u:(\d+\.?\d*) v:(\d+\.?\d*) average:(\d+\.?\d*) min:(\d+\.?\d*) max:(\d+\.?\d*)"
+)
+
+
+## Stats parsing regex
+stats_regex = re.compile(
+	"encoded (\d+) frames? in \d+\.?\d*s \((\d+\.?\d*) fps\), (\d+\.?\d*) kb/s, Avg QP:(\d+\.?\d*)"
 )
 
 
@@ -148,7 +174,7 @@ results = {}
 
 
 ## Print header
-print("\t".join(["total", "prediction", "residual", "other"]))
+print("\t".join(["total", "prediction", "residual", "other", "psnr", "qp"]))
 
 
 ## Bitrate loop
@@ -178,7 +204,7 @@ for bitrate in bitrates:
 	
 	
 	## Second encoding pass
-	subprocess.run([
+	result = subprocess.run([
 		"ffmpeg",
 		"-i", source_video_path,
 		"-c:v", "libx265",
@@ -187,12 +213,32 @@ for bitrate in bitrates:
 		"-c:a", "aac",
 		"-b:a", "128k",
 		recoded_video_file_name
-	], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	
+	
+	## Capture encoding statistics
+	output = result.stderr.decode('utf-8')
+	stats_match = stats_regex.search(output)
+	results[bitrate]['frame_count'] = int(stats_match.group(1))
+	results[bitrate]['fps']         = float(stats_match.group(2))
+	results[bitrate]['kbps']        = float(stats_match.group(3))
+	results[bitrate]['qp']          = float(stats_match.group(4))
 	
 	
 	## Clean files
 	os.remove("x265_2pass.log")
 	os.remove("x265_2pass.log.cutree")
+	
+	
+	## Calculate PSNR
+	result = subprocess.run(calculate_psnr, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	output = result.stderr.decode('utf-8')
+	psnr_match = psnr_regex.search(output)
+	results[bitrate]['psnr'] = float(psnr_match.group(4))
+	
+	
+	## Clean files
+	os.remove(psnr_output_file_name)
 	
 	
 	## Extract raw h265 bitstream from video container format
@@ -256,5 +302,7 @@ for bitrate in bitrates:
 		str(results[bitrate]['hevc_bistream_size']),
 		str(results[bitrate]['prediction']),
 		str(results[bitrate]['residual']),
-		str(results[bitrate]['other'])
+		str(results[bitrate]['other']),
+		str(results[bitrate]['psnr']),
+		str(results[bitrate]['qp'])
 	]))
