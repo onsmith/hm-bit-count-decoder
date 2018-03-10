@@ -130,7 +130,7 @@ psnr_regex = re.compile(
 
 ## FPS parsing regex
 fps_regex = re.compile(
-	"hevc:fps=(?P<fps>\d+)"
+	"Stream #\d+.*\s(?P<fps>\d+\.?\d*)\s*fps"
 )
 
 
@@ -250,13 +250,14 @@ def calculate_psnr(vid1, vid2):
 
 ## Runs ffmpeg to extract the raw hevc bitstream from a video file
 def extract_hevc_bitstream(mp4_video_in, hevc_bitstream_out):
-	return subprocess.run([
+	subprocess.run([
 		"ffmpeg",
 		"-i", mp4_video_in,
 		"-c:v", "copy",
 		"-bsf", "hevc_mp4toannexb",
 		hevc_bitstream_out
 	], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
 
 
 
@@ -316,7 +317,7 @@ for bitrate in bitrates:
 		
 		## Capture frame rate
 		fps_match = fps_regex.search(output)
-		results[bitrate]['fps'] = int(fps_match.group("fps"))
+		results[bitrate]['fps'] = float(fps_match.group("fps"))
 		
 		
 		## Extract raw h265 bitstream from video container format
