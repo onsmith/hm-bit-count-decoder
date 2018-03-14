@@ -12,29 +12,29 @@ import re
 ################################################################################
 
 ## Path of source video file
-source_video_path = "jellyfish.mp4"
+source_video_path = "tractor.mp4"
 
 
 ## Bitrates to test (in kbps)
-bitrates = [
-	"100000k",
-	"80000k",
-	"60000k",
-	"40000k",
-	"20000k",
-	"10000k",
-	"5000k",
-	"1000k",
-	"500k",
-	"250k"
-]
 #bitrates = [
-#	"400k",
-#	"375k",
-#	"350k",
-#	"325k",
-#	"300k"
+#	"100000k",
+#	"80000k",
+#	"60000k",
+#	"40000k",
+#	"20000k",
+#	"10000k",
+#	"5000k",
+#	"1000k",
+#	"500k",
+#	"250k"
 #]
+bitrates = [
+	"400k",
+	"375k",
+	"350k",
+	"325k",
+	"300k"
+]
 
 
 ## If true, the recoded videos will be saved in the current directory
@@ -106,10 +106,6 @@ recoded_video_file_name = "recoded.mp4"
 extracted_bitstream_file_name = "recoded.h265"
 
 
-## PSNR output file name
-psnr_output_file_name = "psnr.mp4"
-
-
 ## CABAC line parsing regex
 cabac_regex = re.compile(
 	"^\s(?P<syntax_element>\S+)\s+:\s+(\S+)\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(?P<total_bits>-?\d+)\s\(\s+(-?\d+)\)\s$"
@@ -122,33 +118,27 @@ cavlc_regex = re.compile(
 )
 
 
-## PSNR parsing regex
-psnr_regex = re.compile(
-	"PSNR y:(?P<y>\d+\.?\d*) u:(?P<u>\d+\.?\d*) v:(?P<v>\d+\.?\d*) average:(?P<avg>\d+\.?\d*) min:(?P<min>\d+\.?\d*) max:(?P<max>\d+\.?\d*)"
+## Stats parsing regex
+stats_regex = re.compile(
+	"encoded (?P<frames>\d+) frames? in \d+\.?\d*s \(\d+\.?\d* fps\), \d+\.?\d* kb/s, Avg QP:(?P<qp>\d+\.?\d*), Global PSNR: (?P<psnr>\d+\.?\d*)"
 )
 
 
 ## FPS parsing regex
 fps_regex = re.compile(
-	"Stream #\d+.*\s(?P<fps>\d+\.?\d*)\s*fps"
-)
-
-
-## Stats parsing regex
-stats_regex = re.compile(
-	"encoded (?P<frames>\d+) frames? in \d+\.?\d*s \(\d+\.?\d* fps\), \d+\.?\d* kb/s, Avg QP:(?P<qp>\d+\.?\d*)"
+	"Stream #\d.*\s(?P<fps>\d+\.?\d*)\s*fps"
 )
 
 
 ## Frame stats parsing regexes
 iframes_regex = re.compile(
-	"x265 [info]: frame I:\s*(?P<count>\d+),\s*Avg QP:\s*(?P<qp>\d+\.?\d*)\s*kb/s:\s*(?P<kbps>\d+\.?\d*)"
+	"x265 \[info]: frame I:\s*(?P<count>\d+),\s*Avg QP:\s*(?P<qp>\d+\.?\d*)\s*kb/s:\s*(?P<kbps>\d+\.?\d*)\s*PSNR Mean:\s*Y:\s*(?P<psnr_y>\d+\.?\d*)\s*U:\s*(?P<psnr_u>\d+\.?\d*)\s*V:\s*(?P<psnr_v>\d+\.?\d*)"
 )
 pframes_regex = re.compile(
-	"x265 [info]: frame P:\s*(?P<count>\d+),\s*Avg QP:\s*(?P<qp>\d+\.?\d*)\s*kb/s:\s*(?P<kbps>\d+\.?\d*)"
+	"x265 \[info]: frame P:\s*(?P<count>\d+),\s*Avg QP:\s*(?P<qp>\d+\.?\d*)\s*kb/s:\s*(?P<kbps>\d+\.?\d*)\s*PSNR Mean:\s*Y:\s*(?P<psnr_y>\d+\.?\d*)\s*U:\s*(?P<psnr_u>\d+\.?\d*)\s*V:\s*(?P<psnr_v>\d+\.?\d*)"
 )
 bframes_regex = re.compile(
-	"x265 [info]: frame B:\s*(?P<count>\d+),\s*Avg QP:\s*(?P<qp>\d+\.?\d*)\s*kb/s:\s*(?P<kbps>\d+\.?\d*)"
+	"x265 \[info]: frame B:\s*(?P<count>\d+),\s*Avg QP:\s*(?P<qp>\d+\.?\d*)\s*kb/s:\s*(?P<kbps>\d+\.?\d*)\s*PSNR Mean:\s*Y:\s*(?P<psnr_y>\d+\.?\d*)\s*U:\s*(?P<psnr_u>\d+\.?\d*)\s*V:\s*(?P<psnr_v>\d+\.?\d*)"
 )
 
 
@@ -160,12 +150,62 @@ bframes_regex = re.compile(
 #
 ################################################################################
 
+## Runs ffmpeg to extract the raw hevc bitstream from a video file
+def extract_hevc_bitstream(mp4_video_in, hevc_bitstream_out):
+	subprocess.run([
+		"ffmpeg",
+		"-i", mp4_video_in,
+		"-c:v", "copy",
+		"-bsf", "hevc_mp4toannexb",
+		hevc_bitstream_out
+	], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+## Performs two-pass encoding via x265 with ffmpeg to recode a given video file,
+##   achieving a target bitrate. Returns the ffmpeg output text
+##
+## See https://trac.ffmpeg.org/wiki/Encode/H.265#Two-PassExample
+def recode_video(video, bitrate):
+	subprocess.run([
+		"ffmpeg",
+		"-y",
+		"-i", video,
+		"-c:v", "libx265",
+		"-b:v", bitrate,
+		"-x265-params", ":".join([
+			"pass=1",
+			"keyint=-1",
+			"bframes=0"
+		]),
+		"-c:a", "aac",
+		"-b:a", "128k",
+		"-f", "mp4",
+		"NUL" # "NUL" on Windows, "/dev/null" on linux
+	], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	
+	return subprocess.run([
+		"ffmpeg",
+		"-i", video,
+		"-c:v", "libx265",
+		"-b:v", bitrate,
+		"-x265-params", ":".join([
+			"pass=2",
+			"keyint=-1",
+			"bframes=0"
+		]),
+		"-c:a", "aac",
+		"-b:a", "128k",
+		"-psnr",
+		recoded_video_file_name
+	], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
 ## Prints a results data structure to stdout
 def print_results(data):
 	seconds = data['frames'] / data['fps']
 	print("\t".join([
 		bitrate[:-1],
-		str(data['bitstream_size'] * 8 / 1000 / seconds),
+		str(data['bitstream_size'] / 1000 / seconds),
 		str(data['prediction'] / 1000 / seconds),
 		str(data['residual'] / 1000 / seconds),
 		str(data['other'] / 1000 / seconds),
@@ -188,11 +228,6 @@ def clean_up_files(bitrate):
 		pass
 	
 	try:
-		os.remove(psnr_output_file_name)
-	except:
-		pass
-	
-	try:
 		os.remove(extracted_bitstream_file_name)
 	except:
 		pass
@@ -204,59 +239,6 @@ def clean_up_files(bitrate):
 			os.remove(recoded_video_file_name)
 	except:
 		pass
-
-
-## Performs two-pass encoding via x265 with ffmpeg to recode a given video file,
-##   achieving a target bitrate. Returns the ffmpeg output text
-##
-## See https://trac.ffmpeg.org/wiki/Encode/H.265#Two-PassExample
-def recode_video(video, bitrate):
-	subprocess.run([
-		"ffmpeg",
-		"-y",
-		"-i", video,
-		"-c:v", "libx265",
-		"-b:v", bitrate,
-		"-x265-params", "pass=1",
-		"-c:a", "aac",
-		"-b:a", "128k",
-		"-f", "mp4",
-		"NUL" # "NUL" on Windows, "/dev/null" on linux
-	], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-	
-	return subprocess.run([
-		"ffmpeg",
-		"-i", video,
-		"-c:v", "libx265",
-		"-b:v", bitrate,
-		"-x265-params", "pass=2",
-		"-c:a", "aac",
-		"-b:a", "128k",
-		recoded_video_file_name
-	], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-
-## Runs ffmpeg on two versions of a video to calculate the psnr between the
-##   videos.
-def calculate_psnr(vid1, vid2):
-	return subprocess.run([
-		"ffmpeg",
-		"-i", vid1,
-		"-i", vid2,
-		"-filter_complex", "psnr",
-		psnr_output_file_name
-	], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-
-## Runs ffmpeg to extract the raw hevc bitstream from a video file
-def extract_hevc_bitstream(mp4_video_in, hevc_bitstream_out):
-	subprocess.run([
-		"ffmpeg",
-		"-i", mp4_video_in,
-		"-c:v", "copy",
-		"-bsf", "hevc_mp4toannexb",
-		hevc_bitstream_out
-	], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 
@@ -299,20 +281,11 @@ for bitrate in bitrates:
 		output = result.stderr.decode('utf-8')
 		
 		
-		## Capture average qp and number of frames
+		## Capture average qp, number of frames, psnr
 		stats_match = stats_regex.search(output)
 		results[bitrate]['frames'] = int(stats_match.group("frames"))
 		results[bitrate]['qp']     = float(stats_match.group("qp"))
-		
-		
-		## Run PSNR / frame rate calculation
-		result = calculate_psnr(source_video_path, recoded_video_file_name)
-		output = result.stderr.decode('utf-8')
-		
-		
-		## Capture PSNR
-		psnr_match = psnr_regex.search(output)
-		results[bitrate]['psnr'] = float(psnr_match.group("avg"))
+		results[bitrate]['psnr']   = float(stats_match.group("psnr"))
 		
 		
 		## Capture frame rate
@@ -320,12 +293,36 @@ for bitrate in bitrates:
 		results[bitrate]['fps'] = float(fps_match.group("fps"))
 		
 		
+		## Capture i-frame statistics
+		iframes_match = iframes_regex.search(output)
+		if iframes_match:
+			results[bitrate]['iframes'] = float(iframes_match.group("count"))
+		else:
+			results[bitrate]['iframes'] = 0.0
+		
+		
+		## Capture p-frame statistics
+		pframes_match = pframes_regex.search(output)
+		if pframes_match:
+			results[bitrate]['pframes'] = float(pframes_match.group("count"))
+		else:
+			results[bitrate]['pframes'] = 0.0
+		
+		
+		## Capture b-frame statistics
+		bframes_match = bframes_regex.search(output)
+		if bframes_match:
+			results[bitrate]['bframes'] = float(bframes_match.group("count"))
+		else:
+			results[bitrate]['bframes'] = 0.0
+		
+		
 		## Extract raw h265 bitstream from video container format
 		extract_hevc_bitstream(recoded_video_file_name, extracted_bitstream_file_name)
 		
 		
 		## Save hevc bitstream size
-		results[bitrate]['bitstream_size'] = os.path.getsize(extracted_bitstream_file_name)
+		results[bitrate]['bitstream_size'] = os.path.getsize(extracted_bitstream_file_name) * 8
 		
 		
 		## Run bit count decoder
