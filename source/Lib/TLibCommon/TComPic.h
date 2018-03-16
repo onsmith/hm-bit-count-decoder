@@ -77,6 +77,15 @@ private:
   Bool                  m_isTop;
   Bool                  m_isField;
 
+  UInt*                 m_CUCount;                // Counts CUs
+  UInt*                 m_intraCUCount;           // Counts inter CUs
+  UInt*                 m_interCUCount;           // Counts intra CUs
+  UInt*                 m_skippedCUCount;         // Counts skipped CUs
+  UInt*                 m_IPCMCUCount;            // Counts I-PCM CUs
+  
+  Void xInitCUCounts(const UInt uiDepth); // Initialize and zero CU tracking arrays
+  Void xDestroyCUCounts();                // Destroy CU tracking arrays
+
   std::vector<std::vector<TComDataCU*> > m_vSliceCUDataLink;
 
   SEIMessages  m_SEIs; ///< Any SEI messages that have been received.  If !NULL we own the object.
@@ -177,6 +186,18 @@ public:
    * return the current list of SEI messages associated with this picture.
    * Pointer is valid until this->destroy() is called */
   const SEIMessages& getSEIs() const { return m_SEIs; }
+
+  /* CU statistics recording methods */
+  UInt getCUCount(const UInt uiDepth) const;
+  UInt getIPCMCUCount(const UInt uiDepth) const;
+  UInt getInterCUCount(const UInt uiDepth) const;
+  UInt getIntraCUCount(const UInt uiDepth) const;
+  UInt getSkippedCUCount(const UInt uiDepth) const;
+  Void countCU(const UInt uiDepth);
+  Void countIPCMCU(const UInt uiDepth);
+  Void countInterCU(const UInt uiDepth);
+  Void countIntraCU(const UInt uiDepth);
+  Void countSkippedCU(const UInt uiDepth);
 };// END CLASS DEFINITION TComPic
 
 //! \}

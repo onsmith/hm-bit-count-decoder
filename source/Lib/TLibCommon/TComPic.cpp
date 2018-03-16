@@ -65,6 +65,9 @@ TComPic::TComPic()
 TComPic::~TComPic()
 {
   destroy();
+
+  // Destroy CU tracking array memory
+  xDestroyCUCounts();
 }
 
 #if REDUCED_ENCODER_MEMORY
@@ -108,6 +111,9 @@ Void TComPic::create( const TComSPS &sps, const TComPPS &pps, const Bool bIsVirt
     deleteSEIs (m_SEIs);
   }
   m_bUsedByCurr = false;
+
+  // Initialize CU tracking array memory and set counts to 0
+  xInitCUCounts(uiMaxDepth);
 }
 
 #if REDUCED_ENCODER_MEMORY
@@ -257,5 +263,77 @@ UInt TComPic::getSubstreamForCtuAddr(const UInt ctuAddr, const Bool bAddressInRa
   return subStrm;
 }
 
+Void TComPic::xInitCUCounts(const UInt maxDepth)
+{
+  m_CUCount        = new UInt[maxDepth];
+  m_IPCMCUCount    = new UInt[maxDepth];
+  m_interCUCount   = new UInt[maxDepth];
+  m_intraCUCount   = new UInt[maxDepth];
+  m_skippedCUCount = new UInt[maxDepth];
+  memset(m_CUCount,        0, maxDepth*sizeof(UInt));
+  memset(m_IPCMCUCount,    0, maxDepth*sizeof(UInt));
+  memset(m_interCUCount,   0, maxDepth*sizeof(UInt));
+  memset(m_intraCUCount,   0, maxDepth*sizeof(UInt));
+  memset(m_skippedCUCount, 0, maxDepth*sizeof(UInt));
+}
+
+Void TComPic::xDestroyCUCounts()
+{
+  delete m_CUCount;
+  delete m_IPCMCUCount;
+  delete m_interCUCount;
+  delete m_intraCUCount;
+  delete m_skippedCUCount;
+}
+
+UInt TComPic::getCUCount(const UInt uiDepth) const
+{
+  return m_CUCount[uiDepth];
+}
+
+UInt TComPic::getIPCMCUCount(const UInt uiDepth) const
+{
+  return m_IPCMCUCount[uiDepth];
+}
+
+UInt TComPic::getInterCUCount(const UInt uiDepth) const
+{
+  return m_interCUCount[uiDepth];
+}
+
+UInt TComPic::getIntraCUCount(const UInt uiDepth) const
+{
+  return m_intraCUCount[uiDepth];
+}
+
+UInt TComPic::getSkippedCUCount(const UInt uiDepth) const
+{
+  return m_skippedCUCount[uiDepth];
+}
+
+Void TComPic::countCU(const UInt uiDepth)
+{
+  m_CUCount[uiDepth]++;
+}
+
+Void TComPic::countIPCMCU(const UInt uiDepth)
+{
+  m_IPCMCUCount[uiDepth]++;
+}
+
+Void TComPic::countInterCU(const UInt uiDepth)
+{
+  m_interCUCount[uiDepth]++;
+}
+
+Void TComPic::countIntraCU(const UInt uiDepth)
+{
+  m_intraCUCount[uiDepth]++;
+}
+
+Void TComPic::countSkippedCU(const UInt uiDepth)
+{
+  m_skippedCUCount[uiDepth]++;
+}
 
 //! \}

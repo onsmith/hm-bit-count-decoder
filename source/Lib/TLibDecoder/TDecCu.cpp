@@ -267,9 +267,12 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     m_pcEntropyDecoder->decodeSkipFlag( pcCU, uiAbsPartIdx, uiDepth );
   }
 
+  pcPic->countCU(uiDepth);
+
 
   if( pcCU->isSkipped(uiAbsPartIdx) )
   {
+    pcPic->countSkippedCU(uiDepth);
     m_ppcCU[uiDepth]->copyInterPredInfoFrom( pcCU, uiAbsPartIdx, REF_PIC_LIST_0 );
     m_ppcCU[uiDepth]->copyInterPredInfoFrom( pcCU, uiAbsPartIdx, REF_PIC_LIST_1 );
     TComMvField cMvFieldNeighbours[MRG_MAX_NUM_CANDS << 1]; // double length for mv of both lists
@@ -302,12 +305,23 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
   m_pcEntropyDecoder->decodePredMode( pcCU, uiAbsPartIdx, uiDepth );
   m_pcEntropyDecoder->decodePartSize( pcCU, uiAbsPartIdx, uiDepth );
 
+  if (pcCU->isInter( uiAbsPartIdx ))
+  {
+    pcPic->countInterCU(uiDepth);
+  }
+
+  if (pcCU->isIntra( uiAbsPartIdx ))
+  {
+    pcPic->countIntraCU(uiDepth);
+  }
+
   if (pcCU->isIntra( uiAbsPartIdx ) && pcCU->getPartitionSize( uiAbsPartIdx ) == SIZE_2Nx2N )
   {
     m_pcEntropyDecoder->decodeIPCMInfo( pcCU, uiAbsPartIdx, uiDepth );
 
     if(pcCU->getIPCMFlag(uiAbsPartIdx))
     {
+      pcPic->countIPCMCU(uiDepth);
       xFinishDecodeCU( pcCU, uiAbsPartIdx, uiDepth, isLastCtuOfSliceSegment );
       return;
     }
