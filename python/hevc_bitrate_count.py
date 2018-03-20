@@ -26,14 +26,14 @@ source_video_path = "tractor.mp4"
 #	"5000k",
 #	"1000k",
 #	"500k",
-#	"250k"
+#	"250k",
 #]
 bitrates = [
-	"400k",
-	"375k",
-	"350k",
+#	"400k",
+#	"375k",
+#	"350k",
 	"325k",
-	"300k"
+#	"300k",
 ]
 
 
@@ -61,7 +61,7 @@ prediction_keys = [
 	"CABAC_BITS__REF_FRM_IDX",
 	"CABAC_BITS__MVD",
 	"CABAC_BITS__MVD_EP",
-	"CABAC_BITS__CROSS_COMPONENT_PREDICTION"
+	"CABAC_BITS__CROSS_COMPONENT_PREDICTION",
 ]
 
 
@@ -84,7 +84,7 @@ residual_keys = [
 	"EXPLICIT_RDPCM_BITS",
 	"CABAC_EP_BIT_ALIGNMENT",
 	"CABAC_BITS__ALIGNED_SIGN_BIT",
-	"CABAC_BITS__ALIGNED_ESCAPE_BITS"
+	"CABAC_BITS__ALIGNED_ESCAPE_BITS",
 ]
 
 
@@ -92,6 +92,10 @@ residual_keys = [
 excluded_keys = [
 	"NAL_UNIT_TOTAL_BODY"
 ]
+
+
+## Column width for printed table
+table_column_width = 19
 
 
 ## Path to bit count decoder
@@ -142,6 +146,12 @@ bframes_regex = re.compile(
 )
 
 
+## CU parsing regex
+cu_regex = re.compile(
+	"^\s*(?P<size>\d+)\s+CUs:\s+(?P<total>\d+)\s+(?P<inter>\d+)\s+(?P<intra>\d+)\s+(?P<skipped>\d+)\s+(?P<ipcm>\d+)\s*$"
+)
+
+
 
 
 ################################################################################
@@ -157,7 +167,7 @@ def extract_hevc_bitstream(mp4_video_in, hevc_bitstream_out):
 		"-i", mp4_video_in,
 		"-c:v", "copy",
 		"-bsf", "hevc_mp4toannexb",
-		hevc_bitstream_out
+		hevc_bitstream_out,
 	], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -175,12 +185,12 @@ def recode_video(video, bitrate):
 		"-x265-params", ":".join([
 			"pass=1",
 			"keyint=-1",
-			"bframes=0"
+			#"bframes=0"
 		]),
 		"-c:a", "aac",
 		"-b:a", "128k",
 		"-f", "mp4",
-		"NUL" # "NUL" on Windows, "/dev/null" on linux
+		"NUL", # "NUL" on Windows, "/dev/null" on linux
 	], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 	
 	return subprocess.run([
@@ -191,27 +201,36 @@ def recode_video(video, bitrate):
 		"-x265-params", ":".join([
 			"pass=2",
 			"keyint=-1",
-			"bframes=0"
+			#"bframes=0"
 		]),
 		"-c:a", "aac",
 		"-b:a", "128k",
 		"-psnr",
-		recoded_video_file_name
+		recoded_video_file_name,
 	], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 ## Prints a results data structure to stdout
 def print_results(data):
-	seconds = data['frames'] / data['fps']
-	print("\t".join([
-		bitrate[:-1],
-		str(data['bitstream_size'] / 1000 / seconds),
-		str(data['prediction'] / 1000 / seconds),
-		str(data['residual'] / 1000 / seconds),
-		str(data['other'] / 1000 / seconds),
-		str(data['psnr']),
-		str(data['qp'])
-	]))
+	seconds = data['frames']['total'] / data['fps']
+	print("".join([
+		bitrate[:-1].rjust(table_column_width),
+		"{:.5}".format(data['bitstream_size'] / 1000 / seconds).rjust(table_column_width),
+		"{:.5}".format(data['prediction']     / 1000 / seconds).rjust(table_column_width),
+		"{:.5}".format(data['residual']       / 1000 / seconds).rjust(table_column_width),
+		"{:.5}".format(data['other']          / 1000 / seconds).rjust(table_column_width),
+		"{:.5}".format(data['psnr']                           ).rjust(table_column_width),
+		"{:.5}".format(data['qp']                             ).rjust(table_column_width),
+	]), end='')
+	for size in ('64', '32', '16', '8'):
+		print("".join([
+			"{:.5}".format(data['cu'][size]['total']   / data['frames']['total']).rjust(table_column_width),
+			"{:.5}".format(data['cu'][size]['inter']   / data['frames']['total']).rjust(table_column_width),
+			"{:.5}".format(data['cu'][size]['intra']   / data['frames']['total']).rjust(table_column_width),
+			"{:.5}".format(data['cu'][size]['skipped'] / data['frames']['total']).rjust(table_column_width),
+			"{:.5}".format(data['cu'][size]['ipcm']    / data['frames']['total']).rjust(table_column_width),
+		]), end='')
+	print('')
 
 
 ## Tries to delete any file that this script may have created; fails silently
@@ -254,15 +273,24 @@ results = {}
 
 
 ## Print header
-print("\t".join([
-	"target_bitrate_kbps",
-	"achieved_bitrate_kbps",
-	"prediction_kbps",
-	"residual_kbps",
-	"other_kbps",
-	"avg_psnr",
-	"avg_qp"
-]))
+print("".join([
+	"target_kbps".rjust(table_column_width),
+	"achieved_kbps".rjust(table_column_width),
+	"prediction_kbps".rjust(table_column_width),
+	"residual_kbps".rjust(table_column_width),
+	"other_kbps".rjust(table_column_width),
+	"average_psnr".rjust(table_column_width),
+	"average_qp".rjust(table_column_width),
+]), end='')
+for size in ('64', '32', '16', '8'):
+	print("".join([
+		(size + "_cu_total").rjust(table_column_width),
+		(size + "_cu_inter").rjust(table_column_width),
+		(size + "_cu_intra").rjust(table_column_width),
+		(size + "_cu_skipped").rjust(table_column_width),
+		(size + "_cu_ipcm").rjust(table_column_width),
+	]), end='')
+print('')
 
 
 ## Bitrate loop
@@ -271,8 +299,43 @@ for bitrate in bitrates:
 		## Initialize entry in results dictionary
 		results[bitrate] = {
 			'prediction': 0,
-			'residual': 0,
-			'other': 0
+			'residual':   0,
+			'other':      0,
+			'frames': {
+				'i': 0,
+				'p': 0,
+				'b': 0,
+			},
+			'cu': {
+				'64': {
+					'total':   0,
+					'inter':   0,
+					'intra':   0,
+					'skipped': 0,
+					'ipcm':    0,
+				},
+				'32': {
+					'total':   0,
+					'inter':   0,
+					'intra':   0,
+					'skipped': 0,
+					'ipcm':    0,
+				},
+				'16': {
+					'total':   0,
+					'inter':   0,
+					'intra':   0,
+					'skipped': 0,
+					'ipcm':    0,
+				},
+				'8': {
+					'total':   0,
+					'inter':   0,
+					'intra':   0,
+					'skipped': 0,
+					'ipcm':    0,
+				},
+			},
 		}
 		
 		
@@ -283,9 +346,9 @@ for bitrate in bitrates:
 		
 		## Capture average qp, number of frames, psnr
 		stats_match = stats_regex.search(output)
-		results[bitrate]['frames'] = int(stats_match.group("frames"))
-		results[bitrate]['qp']     = float(stats_match.group("qp"))
-		results[bitrate]['psnr']   = float(stats_match.group("psnr"))
+		results[bitrate]['frames']['total'] = int(stats_match.group("frames"))
+		results[bitrate]['qp']              = float(stats_match.group("qp"))
+		results[bitrate]['psnr']            = float(stats_match.group("psnr"))
 		
 		
 		## Capture frame rate
@@ -296,25 +359,19 @@ for bitrate in bitrates:
 		## Capture i-frame statistics
 		iframes_match = iframes_regex.search(output)
 		if iframes_match:
-			results[bitrate]['iframes'] = float(iframes_match.group("count"))
-		else:
-			results[bitrate]['iframes'] = 0.0
+			results[bitrate]['frames']['i'] = int(iframes_match.group("count"))
 		
 		
 		## Capture p-frame statistics
 		pframes_match = pframes_regex.search(output)
 		if pframes_match:
-			results[bitrate]['pframes'] = float(pframes_match.group("count"))
-		else:
-			results[bitrate]['pframes'] = 0.0
+			results[bitrate]['frames']['p'] = int(pframes_match.group("count"))
 		
 		
 		## Capture b-frame statistics
 		bframes_match = bframes_regex.search(output)
 		if bframes_match:
-			results[bitrate]['bframes'] = float(bframes_match.group("count"))
-		else:
-			results[bitrate]['bframes'] = 0.0
+			results[bitrate]['frames']['b'] = int(bframes_match.group("count"))
 		
 		
 		## Extract raw h265 bitstream from video container format
@@ -338,6 +395,7 @@ for bitrate in bitrates:
 		for line in lines:
 			cabac_match = cabac_regex.match(line)
 			cavlc_match = cavlc_regex.match(line)
+			cu_match    = cu_regex.match(line)
 			if cabac_match:
 				if cabac_match.group('syntax_element') in excluded_keys:
 					pass
@@ -356,6 +414,13 @@ for bitrate in bitrates:
 					results[bitrate]['residual'] += int(cavlc_match.group('total_bits'))
 				else:
 					results[bitrate]['other'] += int(cavlc_match.group('total_bits'))
+			elif cu_match:
+				size = cu_match.group('size')
+				results[bitrate]['cu'][size]['total']   += int(cu_match.group('total'))
+				results[bitrate]['cu'][size]['inter']   += int(cu_match.group('inter'))
+				results[bitrate]['cu'][size]['intra']   += int(cu_match.group('intra'))
+				results[bitrate]['cu'][size]['skipped'] += int(cu_match.group('skipped'))
+				results[bitrate]['cu'][size]['ipcm']    += int(cu_match.group('ipcm'))
 		
 		
 		## Print results for this bitrate

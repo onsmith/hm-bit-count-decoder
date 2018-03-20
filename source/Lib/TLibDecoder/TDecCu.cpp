@@ -267,12 +267,12 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     m_pcEntropyDecoder->decodeSkipFlag( pcCU, uiAbsPartIdx, uiDepth );
   }
 
+  // Count this CU (it is a leaf CU)
   pcPic->countCU(uiDepth);
-
 
   if( pcCU->isSkipped(uiAbsPartIdx) )
   {
-    pcPic->countSkippedCU(uiDepth);
+    pcPic->countSkippedCU(uiDepth); // Count this CU as a skipped CU
     m_ppcCU[uiDepth]->copyInterPredInfoFrom( pcCU, uiAbsPartIdx, REF_PIC_LIST_0 );
     m_ppcCU[uiDepth]->copyInterPredInfoFrom( pcCU, uiAbsPartIdx, REF_PIC_LIST_1 );
     TComMvField cMvFieldNeighbours[MRG_MAX_NUM_CANDS << 1]; // double length for mv of both lists
@@ -305,11 +305,13 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
   m_pcEntropyDecoder->decodePredMode( pcCU, uiAbsPartIdx, uiDepth );
   m_pcEntropyDecoder->decodePartSize( pcCU, uiAbsPartIdx, uiDepth );
 
+  // If appropriate, count this CU as an inter-predicted CU
   if (pcCU->isInter( uiAbsPartIdx ))
   {
     pcPic->countInterCU(uiDepth);
   }
 
+  // If appropriate, count this CU as an intra-predicted CU
   if (pcCU->isIntra( uiAbsPartIdx ))
   {
     pcPic->countIntraCU(uiDepth);
@@ -321,7 +323,7 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
 
     if(pcCU->getIPCMFlag(uiAbsPartIdx))
     {
-      pcPic->countIPCMCU(uiDepth);
+      pcPic->countIPCMCU(uiDepth); // Count this CU as an I-PCM mode CU
       xFinishDecodeCU( pcCU, uiAbsPartIdx, uiDepth, isLastCtuOfSliceSegment );
       return;
     }

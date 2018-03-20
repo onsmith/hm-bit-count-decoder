@@ -192,15 +192,15 @@ Void TDecGop::filterPicture(TComPic* pcPic)
   
   const UInt maxDepth = pcPic->getPicSym()->getSPS().getMaxTotalCUDepth();
   const UInt maxWidth = pcPic->getPicSym()->getSPS().getMaxCUWidth();
-  printf("\t\tCUs\tInter\tIntra\tSkipped\tIPCM\n");
+  printf("           Total    Inter    Intra  Skipped    I-PCM\n");
   for ( Int i = 0; i < maxDepth; i++ )
   {
-    printf("Size %2d:\t", maxWidth >> i);
-    printf("%d\t", pcPic->getCUCount(i));
-    printf("%d\t", pcPic->getInterCUCount(i));
-    printf("%d\t", pcPic->getIntraCUCount(i));
-    printf("%d\t", pcPic->getSkippedCUCount(i));
-    printf("%d\n",   pcPic->getIPCMCUCount(i));
+    printf("%2d CUs: ", maxWidth >> i);
+    printf("%8d ", pcPic->getCUCount(i));
+    printf("%8d ", pcPic->getInterCUCount(i));
+    printf("%8d ", pcPic->getIntraCUCount(i));
+    printf("%8d ", pcPic->getSkippedCUCount(i));
+    printf("%8d\n",   pcPic->getIPCMCUCount(i));
   }
 
   printf("\n");
