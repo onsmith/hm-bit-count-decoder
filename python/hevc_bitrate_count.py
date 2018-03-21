@@ -13,12 +13,12 @@ import re
 
 ## Paths of source video files
 source_video_paths = [
-	"tractor.mp4",
+	"../video/tractor.mp4",
 ]
 
 
 ## Bitrates to test (in kbps)
-#bitrates = [
+bitrates = [
 #	"100000k",
 #	"80000k",
 #	"60000k",
@@ -28,14 +28,12 @@ source_video_paths = [
 #	"5000k",
 #	"1000k",
 #	"500k",
-#	"250k",
-#]
-bitrates = [
 #	"400k",
 #	"375k",
 #	"350k",
 	"325k",
 #	"300k",
+#	"250k",
 ]
 
 
@@ -212,6 +210,55 @@ def recode_video(video, bitrate):
 	], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
+## Initializes a new results data structure
+def new_results_struct():
+	return {
+		'bitstream_size': 0,
+		'prediction':     0,
+		'residual':       0,
+		'other':          0,
+		'qp':             0.0,
+		'psnr':           0.0,
+		'fps':            0.0,
+		'frames': {
+			'total': 0,
+			'i':     0,
+			'p':     0,
+			'b':     0,
+		},
+		'cu': {
+			'64': {
+				'total':   0,
+				'inter':   0,
+				'intra':   0,
+				'skipped': 0,
+				'ipcm':    0,
+			},
+			'32': {
+				'total':   0,
+				'inter':   0,
+				'intra':   0,
+				'skipped': 0,
+				'ipcm':    0,
+			},
+			'16': {
+				'total':   0,
+				'inter':   0,
+				'intra':   0,
+				'skipped': 0,
+				'ipcm':    0,
+			},
+			'8': {
+				'total':   0,
+				'inter':   0,
+				'intra':   0,
+				'skipped': 0,
+				'ipcm':    0,
+			},
+		},
+	}
+
+
 ## Prints a table header
 def print_table_header():
 	print("".join([
@@ -296,56 +343,17 @@ def clean_up_files(bitrate):
 results = {}
 
 
-## Loop through videos and bitrates
+## Loop through videos
 for source_video_path in source_video_paths:
+	## Initialize data structure to store results for this video
+	results[source_video_path] = {}
+	
+	
+	## Loop through bitrates
 	for bitrate in bitrates:
 		try:
 			## Initialize data structure to store results for this experiment
-			data = {
-				'bitstream_size': 0,
-				'prediction':     0,
-				'residual':       0,
-				'other':          0,
-				'qp':             0.0,
-				'psnr':           0.0,
-				'fps':            0.0,
-				'frames': {
-					'total': 0,
-					'i':     0,
-					'p':     0,
-					'b':     0,
-				},
-				'cu': {
-					'64': {
-						'total':   0,
-						'inter':   0,
-						'intra':   0,
-						'skipped': 0,
-						'ipcm':    0,
-					},
-					'32': {
-						'total':   0,
-						'inter':   0,
-						'intra':   0,
-						'skipped': 0,
-						'ipcm':    0,
-					},
-					'16': {
-						'total':   0,
-						'inter':   0,
-						'intra':   0,
-						'skipped': 0,
-						'ipcm':    0,
-					},
-					'8': {
-						'total':   0,
-						'inter':   0,
-						'intra':   0,
-						'skipped': 0,
-						'ipcm':    0,
-					},
-				},
-			}
+			data = new_results_struct()
 			
 			
 			## Recode video to target bitrate
@@ -433,7 +441,7 @@ for source_video_path in source_video_paths:
 			
 			
 			## Save results for this bitrate
-			results[bitrate][source_video_path] = data
+			results[source_video_path][bitrate] = data
 		
 		
 		## Do our best to clean files
@@ -443,9 +451,8 @@ for source_video_path in source_video_paths:
 
 ## Print results
 for video in source_video_paths:
-	print(video)
-	print('')
+	print(video.split('/')[-1])
 	print_table_header()
 	for bitrate in bitrates:
-		print_results(results[bitrate][video])
+		print_results(results[video][bitrate])
 	print('\n\n')
