@@ -11,8 +11,10 @@ import re
 #
 ################################################################################
 
-## Path of source video file
-source_video_path = "tractor.mp4"
+## Paths of source video files
+source_video_paths = [
+	"tractor.mp4",
+]
 
 
 ## Bitrates to test (in kbps)
@@ -293,140 +295,147 @@ for size in ('64', '32', '16', '8'):
 print('')
 
 
-## Bitrate loop
+## Loop through videos and bitrates
+for source_video_path in source_video_paths:
+	for bitrate in bitrates:
+		try:
+			## Initialize data structure to store results for this experiment
+			data = {
+				'prediction': 0,
+				'residual':   0,
+				'other':      0,
+				'frames': {
+					'i': 0,
+					'p': 0,
+					'b': 0,
+				},
+				'cu': {
+					'64': {
+						'total':   0,
+						'inter':   0,
+						'intra':   0,
+						'skipped': 0,
+						'ipcm':    0,
+					},
+					'32': {
+						'total':   0,
+						'inter':   0,
+						'intra':   0,
+						'skipped': 0,
+						'ipcm':    0,
+					},
+					'16': {
+						'total':   0,
+						'inter':   0,
+						'intra':   0,
+						'skipped': 0,
+						'ipcm':    0,
+					},
+					'8': {
+						'total':   0,
+						'inter':   0,
+						'intra':   0,
+						'skipped': 0,
+						'ipcm':    0,
+					},
+				},
+			}
+			
+			
+			## Recode video to target bitrate
+			result = recode_video(source_video_path, bitrate)
+			output = result.stderr.decode('utf-8')
+			
+			
+			## Capture average qp, number of frames, psnr
+			stats_match = stats_regex.search(output)
+			data['frames']['total'] = int(stats_match.group("frames"))
+			data['qp']              = float(stats_match.group("qp"))
+			data['psnr']            = float(stats_match.group("psnr"))
+			
+			
+			## Capture frame rate
+			fps_match = fps_regex.search(output)
+			data['fps'] = float(fps_match.group("fps"))
+			
+			
+			## Capture i-frame statistics
+			iframes_match = iframes_regex.search(output)
+			if iframes_match:
+				data['frames']['i'] = int(iframes_match.group("count"))
+			
+			
+			## Capture p-frame statistics
+			pframes_match = pframes_regex.search(output)
+			if pframes_match:
+				data['frames']['p'] = int(pframes_match.group("count"))
+			
+			
+			## Capture b-frame statistics
+			bframes_match = bframes_regex.search(output)
+			if bframes_match:
+				data['frames']['b'] = int(bframes_match.group("count"))
+			
+			
+			## Extract raw h265 bitstream from video container format
+			extract_hevc_bitstream(recoded_video_file_name, extracted_bitstream_file_name)
+			
+			
+			## Save hevc bitstream size
+			data['bitstream_size'] = os.path.getsize(extracted_bitstream_file_name) * 8
+			
+			
+			## Run bit count decoder
+			result = subprocess.run([
+				bit_count_decoder_path,
+				"-b", extracted_bitstream_file_name
+			], stdout=subprocess.PIPE)
+			output = result.stdout.decode('utf-8')
+			lines  = output.splitlines()
+			
+			
+			## Parse bit count output line-by-line
+			for line in lines:
+				cabac_match = cabac_regex.match(line)
+				cavlc_match = cavlc_regex.match(line)
+				cu_match    = cu_regex.match(line)
+				if cabac_match:
+					if cabac_match.group('syntax_element') in excluded_keys:
+						pass
+					elif cabac_match.group('syntax_element') in prediction_keys:
+						data['prediction'] += int(cabac_match.group('total_bits'))
+					elif cabac_match.group('syntax_element') in residual_keys:
+						data['residual'] += int(cabac_match.group('total_bits'))
+					else:
+						data['other'] += int(cabac_match.group('total_bits'))
+				elif cavlc_match:
+					if cavlc_match.group('syntax_element') in excluded_keys:
+						pass
+					if cavlc_match.group('syntax_element') in prediction_keys:
+						data['prediction'] += int(cavlc_match.group('total_bits'))
+					elif cavlc_match.group('syntax_element') in residual_keys:
+						data['residual'] += int(cavlc_match.group('total_bits'))
+					else:
+						data['other'] += int(cavlc_match.group('total_bits'))
+				elif cu_match:
+					size = cu_match.group('size')
+					data['cu'][size]['total']   += int(cu_match.group('total'))
+					data['cu'][size]['inter']   += int(cu_match.group('inter'))
+					data['cu'][size]['intra']   += int(cu_match.group('intra'))
+					data['cu'][size]['skipped'] += int(cu_match.group('skipped'))
+					data['cu'][size]['ipcm']    += int(cu_match.group('ipcm'))
+			
+			
+			## Save results for this bitrate
+			results[bitrate][source_video_path] = data
+		
+		
+		## Do our best to clean files
+		finally:
+			clean_up_files(bitrate)
+
+
+## Print results
 for bitrate in bitrates:
-	try:
-		## Initialize entry in results dictionary
-		results[bitrate] = {
-			'prediction': 0,
-			'residual':   0,
-			'other':      0,
-			'frames': {
-				'i': 0,
-				'p': 0,
-				'b': 0,
-			},
-			'cu': {
-				'64': {
-					'total':   0,
-					'inter':   0,
-					'intra':   0,
-					'skipped': 0,
-					'ipcm':    0,
-				},
-				'32': {
-					'total':   0,
-					'inter':   0,
-					'intra':   0,
-					'skipped': 0,
-					'ipcm':    0,
-				},
-				'16': {
-					'total':   0,
-					'inter':   0,
-					'intra':   0,
-					'skipped': 0,
-					'ipcm':    0,
-				},
-				'8': {
-					'total':   0,
-					'inter':   0,
-					'intra':   0,
-					'skipped': 0,
-					'ipcm':    0,
-				},
-			},
-		}
-		
-		
-		## Recode video to target bitrate
-		result = recode_video(source_video_path, bitrate)
-		output = result.stderr.decode('utf-8')
-		
-		
-		## Capture average qp, number of frames, psnr
-		stats_match = stats_regex.search(output)
-		results[bitrate]['frames']['total'] = int(stats_match.group("frames"))
-		results[bitrate]['qp']              = float(stats_match.group("qp"))
-		results[bitrate]['psnr']            = float(stats_match.group("psnr"))
-		
-		
-		## Capture frame rate
-		fps_match = fps_regex.search(output)
-		results[bitrate]['fps'] = float(fps_match.group("fps"))
-		
-		
-		## Capture i-frame statistics
-		iframes_match = iframes_regex.search(output)
-		if iframes_match:
-			results[bitrate]['frames']['i'] = int(iframes_match.group("count"))
-		
-		
-		## Capture p-frame statistics
-		pframes_match = pframes_regex.search(output)
-		if pframes_match:
-			results[bitrate]['frames']['p'] = int(pframes_match.group("count"))
-		
-		
-		## Capture b-frame statistics
-		bframes_match = bframes_regex.search(output)
-		if bframes_match:
-			results[bitrate]['frames']['b'] = int(bframes_match.group("count"))
-		
-		
-		## Extract raw h265 bitstream from video container format
-		extract_hevc_bitstream(recoded_video_file_name, extracted_bitstream_file_name)
-		
-		
-		## Save hevc bitstream size
-		results[bitrate]['bitstream_size'] = os.path.getsize(extracted_bitstream_file_name) * 8
-		
-		
-		## Run bit count decoder
-		result = subprocess.run([
-			bit_count_decoder_path,
-			"-b", extracted_bitstream_file_name
-		], stdout=subprocess.PIPE)
-		output = result.stdout.decode('utf-8')
-		lines  = output.splitlines()
-		
-		
-		## Parse bit count output line-by-line
-		for line in lines:
-			cabac_match = cabac_regex.match(line)
-			cavlc_match = cavlc_regex.match(line)
-			cu_match    = cu_regex.match(line)
-			if cabac_match:
-				if cabac_match.group('syntax_element') in excluded_keys:
-					pass
-				elif cabac_match.group('syntax_element') in prediction_keys:
-					results[bitrate]['prediction'] += int(cabac_match.group('total_bits'))
-				elif cabac_match.group('syntax_element') in residual_keys:
-					results[bitrate]['residual'] += int(cabac_match.group('total_bits'))
-				else:
-					results[bitrate]['other'] += int(cabac_match.group('total_bits'))
-			elif cavlc_match:
-				if cavlc_match.group('syntax_element') in excluded_keys:
-					pass
-				if cavlc_match.group('syntax_element') in prediction_keys:
-					results[bitrate]['prediction'] += int(cavlc_match.group('total_bits'))
-				elif cavlc_match.group('syntax_element') in residual_keys:
-					results[bitrate]['residual'] += int(cavlc_match.group('total_bits'))
-				else:
-					results[bitrate]['other'] += int(cavlc_match.group('total_bits'))
-			elif cu_match:
-				size = cu_match.group('size')
-				results[bitrate]['cu'][size]['total']   += int(cu_match.group('total'))
-				results[bitrate]['cu'][size]['inter']   += int(cu_match.group('inter'))
-				results[bitrate]['cu'][size]['intra']   += int(cu_match.group('intra'))
-				results[bitrate]['cu'][size]['skipped'] += int(cu_match.group('skipped'))
-				results[bitrate]['cu'][size]['ipcm']    += int(cu_match.group('ipcm'))
-		
-		
-		## Print results for this bitrate
-		print_results(results[bitrate])
-	
-	
-	## Do our best to clean files
-	finally:
-		clean_up_files(bitrate)
+	for video in source_video_paths:
+		print_results(results[bitrate][video])
