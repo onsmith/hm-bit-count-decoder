@@ -212,6 +212,28 @@ def recode_video(video, bitrate):
 	], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
+## Prints a table header
+def print_table_header():
+	print("".join([
+		"target_kbps".rjust(table_column_width),
+		"achieved_kbps".rjust(table_column_width),
+		"prediction_kbps".rjust(table_column_width),
+		"residual_kbps".rjust(table_column_width),
+		"other_kbps".rjust(table_column_width),
+		"average_psnr".rjust(table_column_width),
+		"average_qp".rjust(table_column_width),
+	]), end='')
+	for size in ('64', '32', '16', '8'):
+		print("".join([
+			(size + "_cu_total").rjust(table_column_width),
+			(size + "_cu_inter").rjust(table_column_width),
+			(size + "_cu_intra").rjust(table_column_width),
+			(size + "_cu_skipped").rjust(table_column_width),
+			(size + "_cu_ipcm").rjust(table_column_width),
+		]), end='')
+	print('')
+
+
 ## Prints a results data structure to stdout
 def print_results(data):
 	seconds = data['frames']['total'] / data['fps']
@@ -274,40 +296,24 @@ def clean_up_files(bitrate):
 results = {}
 
 
-## Print header
-print("".join([
-	"target_kbps".rjust(table_column_width),
-	"achieved_kbps".rjust(table_column_width),
-	"prediction_kbps".rjust(table_column_width),
-	"residual_kbps".rjust(table_column_width),
-	"other_kbps".rjust(table_column_width),
-	"average_psnr".rjust(table_column_width),
-	"average_qp".rjust(table_column_width),
-]), end='')
-for size in ('64', '32', '16', '8'):
-	print("".join([
-		(size + "_cu_total").rjust(table_column_width),
-		(size + "_cu_inter").rjust(table_column_width),
-		(size + "_cu_intra").rjust(table_column_width),
-		(size + "_cu_skipped").rjust(table_column_width),
-		(size + "_cu_ipcm").rjust(table_column_width),
-	]), end='')
-print('')
-
-
 ## Loop through videos and bitrates
 for source_video_path in source_video_paths:
 	for bitrate in bitrates:
 		try:
 			## Initialize data structure to store results for this experiment
 			data = {
-				'prediction': 0,
-				'residual':   0,
-				'other':      0,
+				'bitstream_size': 0,
+				'prediction':     0,
+				'residual':       0,
+				'other':          0,
+				'qp':             0.0,
+				'psnr':           0.0,
+				'fps':            0.0,
 				'frames': {
-					'i': 0,
-					'p': 0,
-					'b': 0,
+					'total': 0,
+					'i':     0,
+					'p':     0,
+					'b':     0,
 				},
 				'cu': {
 					'64': {
@@ -436,6 +442,10 @@ for source_video_path in source_video_paths:
 
 
 ## Print results
-for bitrate in bitrates:
-	for video in source_video_paths:
+for video in source_video_paths:
+	print(video)
+	print('')
+	print_table_header()
+	for bitrate in bitrates:
 		print_results(results[bitrate][video])
+	print('\n\n')
