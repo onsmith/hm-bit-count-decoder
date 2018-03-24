@@ -99,7 +99,7 @@ Void TComPicSym::create  ( const TComSPS &sps, const TComPPS &pps, UInt uiMaxDep
   const UInt uiMaxCuHeight = sps.getMaxCUHeight();
 
   m_uhTotalDepth       = uiMaxDepth;
-  m_numPartitionsInCtu = 1<<(m_uhTotalDepth<<1);
+  m_numPartitionsInCtu = 1<<(m_uhTotalDepth<<1); // equivalent to 4 ^ m_uhTotalDepth
 
   m_uiMinCUWidth       = uiMaxCuWidth  >> m_uhTotalDepth;
   m_uiMinCUHeight      = uiMaxCuHeight >> m_uhTotalDepth;

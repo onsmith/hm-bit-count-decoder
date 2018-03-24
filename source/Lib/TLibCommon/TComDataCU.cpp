@@ -1575,9 +1575,20 @@ Void TComDataCU::bitwiseOrCbfPartRange( UInt uiCbf, ComponentID compID, UInt uiA
   }
 }
 
+/** Stores the depth of a given CU in the array m_puhDepth
+ * \param uiDepth       Desired depth of the given partition
+ * \param uiAbsPartIdx  CU partition index
+ */
 Void TComDataCU::setDepthSubParts( UInt uiDepth, UInt uiAbsPartIdx )
 {
+  // Calculate uiCurrPartNumb, which represents the number of minimum size CU
+  //   partitions that fit inside the current CU.
+  //
+  // Note: Equivalent to:
+  //   uiCurrPartNumb = m_pcPic->getNumPartitionsInCtu() /  (4 ^ uiDepth);
   UInt uiCurrPartNumb = m_pcPic->getNumPartitionsInCtu() >> (uiDepth << 1);
+
+  // Set the depth for every sub-CU partition inside this CU
   memset( m_puhDepth + uiAbsPartIdx, uiDepth, sizeof(UChar)*uiCurrPartNumb );
 }
 

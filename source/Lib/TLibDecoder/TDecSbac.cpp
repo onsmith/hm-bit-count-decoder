@@ -509,6 +509,8 @@ Void TDecSbac::parseMVPIdx      ( Int& riMVPIdx )
 
 Void TDecSbac::parseSplitFlag     ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth )
 {
+  // If we're already at max depth, we can't split the CU anymore, so there's
+  //   no more split flags to decode
   if( uiDepth == pcCU->getSlice()->getSPS()->getLog2DiffMaxMinCodingBlockSize() )
   {
     pcCU->setDepthSubParts( uiDepth, uiAbsPartIdx );
@@ -518,6 +520,9 @@ Void TDecSbac::parseSplitFlag     ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt ui
   const TComCodingStatisticsClassType ctype(STATS__CABAC_BITS__SPLIT_FLAG, g_aucConvertToBit[pcCU->getSlice()->getSPS()->getMaxCUWidth()>>uiDepth]+2);
 #endif
 
+  // If we made it here, then we're not at max depth (yet). The next symbol in
+  //   the bitstream is a flag specifying whether this CU should be split, so we
+  //   should decode it.
   UInt uiSymbol;
   m_pcTDecBinIf->decodeBin( uiSymbol, m_cCUSplitFlagSCModel.get( 0, 0, pcCU->getCtxSplitFlag( uiAbsPartIdx, uiDepth ) ) RExt__DECODER_DEBUG_BIT_STATISTICS_PASS_OPT_ARG(ctype) );
   DTRACE_CABAC_VL( g_nSymbolCounter++ )
