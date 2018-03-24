@@ -196,17 +196,25 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
   UInt uiTPelY   = pcCU->getCUPelY() + g_auiRasterToPelY[ g_auiZscanToRaster[uiAbsPartIdx] ];
   UInt uiBPelY   = uiTPelY + (maxCuHeight>>uiDepth) - 1;
 
+  // If this CU doesn't overlap the bottom or right edge of the picture, then
+  //   check the bitstream to see if the CU should be split/recursed.
   if( ( uiRPelX < sps.getPicWidthInLumaSamples() ) && ( uiBPelY < sps.getPicHeightInLumaSamples() ) )
   {
     m_pcEntropyDecoder->decodeSplitFlag( pcCU, uiAbsPartIdx, uiDepth );
   }
+
+  // Otherwise, the CU overlaps the edge of the picture...
   else
   {
     bBoundary = true;
   }
+
+  // If we haven't reached a leaf CU yet, we need to do recursion.
   if( ( ( uiDepth < pcCU->getDepth( uiAbsPartIdx ) ) && ( uiDepth < sps.getLog2DiffMaxMinCodingBlockSize() ) ) || bBoundary )
   {
     UInt uiIdx = uiAbsPartIdx;
+
+    // Possibly set the QP values for this CU
     if( uiDepth == pps.getMaxCuDQPDepth() && pps.getUseDQP())
     {
       setdQPFlag(true);
@@ -218,11 +226,12 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
       setIsChromaQpAdjCoded(true);
     }
 
+    // Recurse through the next level of the quadtree
     for ( UInt uiPartUnitIdx = 0; uiPartUnitIdx < 4; uiPartUnitIdx++ )
     {
       uiLPelX   = pcCU->getCUPelX() + g_auiRasterToPelX[ g_auiZscanToRaster[uiIdx] ];
       uiTPelY   = pcCU->getCUPelY() + g_auiRasterToPelY[ g_auiZscanToRaster[uiIdx] ];
-
+      
       if ( !isLastCtuOfSliceSegment && ( uiLPelX < sps.getPicWidthInLumaSamples() ) && ( uiTPelY < sps.getPicHeightInLumaSamples() ) )
       {
         xDecodeCU( pcCU, uiIdx, uiDepth+1, isLastCtuOfSliceSegment );
@@ -234,6 +243,8 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
 
       uiIdx += uiQNumParts;
     }
+
+    // Possibly set the QP values for this CU
     if( uiDepth == pps.getMaxCuDQPDepth() && pps.getUseDQP())
     {
       if ( getdQPFlag() )
@@ -242,34 +253,46 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
         pcCU->setQPSubParts( pcCU->getRefQP( uiQPSrcPartIdx ), uiAbsPartIdx, uiDepth ); // set QP to default QP
       }
     }
+
     return;
   }
 
+  // -----
+  // At this point we are dealing with a leaf CU
+  // -----
+
+  // Account for this CU in statistics gathering (it is a leaf CU)
+  pcPic->countCU(uiDepth);
+
+  // Possibly set the QP values for this CU
   if( uiDepth <= pps.getMaxCuDQPDepth() && pps.getUseDQP())
   {
     setdQPFlag(true);
     pcCU->setQPSubParts( pcCU->getRefQP(uiAbsPartIdx), uiAbsPartIdx, uiDepth ); // set QP to default QP
   }
 
+  // Check the slice parameters to see if CUs at this depth should adjust the QP
+  //   used for chroma quantization.
   if( uiDepth <= pps.getPpsRangeExtension().getDiffCuChromaQpOffsetDepth() && pcCU->getSlice()->getUseChromaQpAdj() )
   {
     setIsChromaQpAdjCoded(true);
   }
 
+  // If transquant bypass is enabled in the PPS, decode transquant bypass flag
+  //   in the bitstream to find out if it should be used with this CU
   if (pps.getTransquantBypassEnabledFlag())
   {
     m_pcEntropyDecoder->decodeCUTransquantBypassFlag( pcCU, uiAbsPartIdx, uiDepth );
   }
 
-  // decode CU mode and the partition size
+  // If the CU is part of a slice that allows inter-frame prediction, then check
+  //   the bitstream to see if the CU is skip-coded
   if( !pcCU->getSlice()->isIntra())
   {
     m_pcEntropyDecoder->decodeSkipFlag( pcCU, uiAbsPartIdx, uiDepth );
   }
 
-  // Count this CU (it is a leaf CU)
-  pcPic->countCU(uiDepth);
-
+  // Handle decoding skipped CUs
   if( pcCU->isSkipped(uiAbsPartIdx) )
   {
     pcPic->countSkippedCU(uiDepth); // Count this CU as a skipped CU
@@ -301,43 +324,57 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     xFinishDecodeCU( pcCU, uiAbsPartIdx, uiDepth, isLastCtuOfSliceSegment );
     return;
   }
+  
+  // -----
+  // At this point we are dealing with a non-skipped CU
+  // ----- 
 
+  // Decode prediction mode and PU partitioning from the bitstream
   m_pcEntropyDecoder->decodePredMode( pcCU, uiAbsPartIdx, uiDepth );
   m_pcEntropyDecoder->decodePartSize( pcCU, uiAbsPartIdx, uiDepth );
 
   // If appropriate, count this CU as an inter-predicted CU
-  if (pcCU->isInter( uiAbsPartIdx ))
+  if ( pcCU->isInter( uiAbsPartIdx ) )
   {
-    pcPic->countInterCU(uiDepth);
+    pcPic->countInterCU( uiDepth );
   }
 
   // If appropriate, count this CU as an intra-predicted CU
-  if (pcCU->isIntra( uiAbsPartIdx ))
+  if ( pcCU->isIntra( uiAbsPartIdx ) )
   {
-    pcPic->countIntraCU(uiDepth);
+    pcPic->countIntraCU( uiDepth );
   }
 
-  if (pcCU->isIntra( uiAbsPartIdx ) && pcCU->getPartitionSize( uiAbsPartIdx ) == SIZE_2Nx2N )
+  // If this is an intra-predicted CU and the PU size is the same as the CU
+  //   size (SIZE_2Nx2N), then check the bitstream to see if this CU is coded in
+  //   I-PCM mode
+  if ( pcCU->isIntra( uiAbsPartIdx ) && pcCU->getPartitionSize( uiAbsPartIdx ) == SIZE_2Nx2N )
   {
     m_pcEntropyDecoder->decodeIPCMInfo( pcCU, uiAbsPartIdx, uiDepth );
 
-    if(pcCU->getIPCMFlag(uiAbsPartIdx))
+    if ( pcCU->getIPCMFlag( uiAbsPartIdx ) )
     {
-      pcPic->countIPCMCU(uiDepth); // Count this CU as an I-PCM mode CU
+      pcPic->countIPCMCU( uiDepth ); // Count this CU as an I-PCM mode CU
       xFinishDecodeCU( pcCU, uiAbsPartIdx, uiDepth, isLastCtuOfSliceSegment );
       return;
     }
   }
 
+  // -----
+  // At this point we are dealing with a non-I-PCM coded CU
+  // ----- 
+
+  // Decode prediction info for this CU
   // prediction mode ( Intra : direction mode, Inter : Mv, reference idx )
   m_pcEntropyDecoder->decodePredInfo( pcCU, uiAbsPartIdx, uiDepth, m_ppcCU[uiDepth]);
 
-  // Coefficient decoding
+  // Decode residual coefficients for this CU
   Bool bCodeDQP = getdQPFlag();
   Bool isChromaQpAdjCoded = getIsChromaQpAdjCoded();
   m_pcEntropyDecoder->decodeCoeff( pcCU, uiAbsPartIdx, uiDepth, bCodeDQP, isChromaQpAdjCoded );
   setIsChromaQpAdjCoded( isChromaQpAdjCoded );
   setdQPFlag( bCodeDQP );
+
   xFinishDecodeCU( pcCU, uiAbsPartIdx, uiDepth, isLastCtuOfSliceSegment );
 }
 
